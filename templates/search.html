@@ -1,0 +1,17 @@
+
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="page-header">
+  <form style="display: inline;" action="{{ url_for('home') }}" method="post" name="search">
+    {{ form.garment_search(size=20) }}
+    <input type="submit" value="Search">
+  </form>
+
+  {% if results %}
+    <h1>Search results for "{{ query }}":</h1>
+    {{ results }}
+  {% endif %}
+</div>
+
+{% endblock content %}
