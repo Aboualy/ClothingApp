@@ -3,33 +3,60 @@
 {% block content %}
 
      <nav class="navbar navbar-light bg-light">
+         <form class="form-inline my-2 my-lg-0" method="POST" action="/search">
+            {{ form.hidden_tag() }}
+            <fieldset class="form-group">
+                <div class="form-group">
+                    {{ form.gare.label(class="form-control-label") }}
 
-
-
-         <form class="form-inline my-2 my-lg-0" action="/search">
-             <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-             <button class="btn btn-primary custom-btn" type="submit" >Search</button>
-         </form>
-
-
+                    {% if form.gare.errors %}
+                        {{ form.gare(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.gare.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.gare(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            </fieldset>
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary custom-btn") }}
+            </div>
+        </form>
 
          <a class="navbar-brand" href="#"></a>
-         <div class="dropdown">
-            <button class="btn btn-primary custom-btn" style="color: whitesmoke" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <i class="fas fa-bars" ></i>
-            </button>
-            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                <a class="dropdown-item" href="#">Size</a>
-                <a class="dropdown-item" href="#">Price</a>
-                <a class="dropdown-item" href="#">Date</a>
+        <form class="form-inline my-2 my-lg-0" method="POST" action="/sort">
+            {{ iform.hidden_tag() }}
+            <fieldset class="form-group">
+                <div class="form-group">
+                    {{ iform.myField.label(class="form-control-label") }}
+
+                    {% if iform.myField.errors %}
+                        {{ iform.myField(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in iform.myField.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ iform.myField(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+              <div class="form-group">
+                    </div>
+            </fieldset>
+            <div class="form-group">
+                {{ iform.submit(class="btn btn-primary custom-btn") }}
             </div>
-        </div>
+        </form>
         </nav>
 
     {% for garment in garments %}
         <div class="card-body">
             <nav class="navbar navbar-light bg-light">
-                <a class="navbar-brand" href="#">Interested</a>
+                <a class="btn btn-primary custom-btn" href="#">Interested</a>
             </nav>
 
 
@@ -42,7 +69,7 @@
                   <img src="data:image/png;base64, {{ garment.pic }}" class="d-block w-100" alt="...">
                   </div>
 
-                  <p class="card-text"> <button type="button" class="btn btn-light" disabled>Price: {{ garment.price }}€  Size: {{ garment.size }}</button> </p>
+                  <p class="card-text"> <button type="button" class="btni" disabled>Price: {{ garment.price }}€ Size: {{ garment.size }}</button> </p>
               </div>
               <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>

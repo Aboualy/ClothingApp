@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
-    <h5>Hello {{ current_user.username }}</h5>
+    <h5>Hello {{ current_user.firstname }}</h5>
     {% for garment in garments %}
     {% if garment.author == current_user %}
         <nav class="navbar navbar-light bg-light">
@@ -25,7 +25,7 @@
                   </div>
 
 
-                  <p class="card-text"> <button type="button" class="btn btn-light" disabled>Price: {{ garment.price }}€  Size: {{ garment.size }}</button> </p>
+                  <p class="card-text"> <button type="button" class="btn btn-light" disabled>Price: {{ garment.price }} €  Size: {{ garment.size }}</button> </p>
               </div>
               <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -41,7 +41,7 @@
                 </div>
                 <div class="col-md-8">
                   <div class="card-body">
-                    <h5 class="card-title">{{ garment.title }}</h5>
+                    <h5 class="card-title">{{ garment.title }} </h5>
                     <p class="card-text">{{ garment.des }}
                     </p>
                     <p class="card-text"><small class="text-muted">Last updated {{ garment.date_posted.strftime('%Y-%m-%d') }}</small></p>

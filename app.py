@@ -10,17 +10,17 @@ from werkzeug.utils import secure_filename
 from clothes import ClothesForm
 from db_handling import User, Garment
 from loginpage import LoginForm
-from userreg import RegistrationForm, searchForm
+from userreg import RegistrationForm, searchForm, sForm, Inputs
 from db_config import bcrypt, db, app
-
 
 @app.route("/")
 @app.route("/home")
-def home(garments=None):
+def home(garments=None, *args):
+    form = sForm()
+    iform = Inputs()
     if garments is None:
         garments = Garment.query.all()
-
-    return render_template('home.html', garments=garments)
+    return render_template('home.html', garments=garments, form=form, iform=iform)
 
 
 @app.route("/about")
@@ -90,14 +90,14 @@ def update_garment(garment_id):
         garment.pic = f'{base64.b64encode(form.pic.data.read()).decode("utf-8")}'
         db.session.commit()
         flash('Your garment has been updated!', 'success')
-        return redirect(url_for('garment', garment_id=garment.id))
+        #return redirect(url_for('garment', garment_id=garment.id))
+        return redirect(url_for('home'))
     elif request.method == 'GET':
         form.title.data = garment.title
         form.des.data = garment.des
     return render_template('create_garment.html', title='Update Garment',
                            form=form, legend='Update Garment')
-
-
+    #return render_template('home.html')
 
 
 @app.route("/garment/<int:garment_id>/delete", methods=['POST'])
@@ -109,6 +109,7 @@ def delete_garment(garment_id):
     flash('Your clothes have been successfully deleted!', 'success')
     return redirect(url_for('account'))
 
+
 @app.route("/garment/new", methods=['GET', 'POST'])
 @login_required
 def new_garment():
@@ -116,7 +117,6 @@ def new_garment():
     if form.validate_on_submit():
         gender = str(form.gender.data)
         size = str(form.size.data)
-        print(size)
         pic = f'{base64.b64encode(form.pic.data.read()).decode("utf-8")}'
         garment = Garment(title=form.title.data,  gender=gender, size=size, price=form.price.data, des=form.des.data, author=current_user, pic=pic)
         db.session.add(garment)
@@ -135,18 +135,35 @@ def garment(garment_id):
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
-    form = searchForm()
-    garments = Garment.query.all()
+    form = sForm()
+    iform = Inputs()
+    garments = Garment.query
     if form.validate_on_submit():
-        search_term = form.query.data
-        print(search_term)
-        results = garments.filter(Garment.des.like('%' + search_term + '%'))
-        print(results)
-        return render_template('search.html', form=form, results=results)
+        search_term = form.gare.data
+        garments = garments.filter(Garment.des.like('%' + search_term + '%'))
+        garments = garments.order_by(Garment.des).all()
+       # return render_template('search.html', form=form, results=results)
+        return render_template('home.html', garments=garments, form=form, iform=iform)
 
     return render_template('search.html', form=form)
 
 
+@app.route('/sort', methods=['GET', 'POST'])
+def sort():
+    form = sForm()
+    iform = Inputs()
+    garments = Garment.query
+    if  iform.validate_on_submit():
+        sort_value =  iform.myField.data
+        if sort_value == "price":
+            garments = Garment.query.order_by(Garment.price.desc())
+        elif sort_value == "date":
+            garments = Garment.query.order_by(Garment.date_posted.desc())
+
+
+        return render_template('home.html', garments=garments, form=form, iform=iform)
+
+    return render_template('sort.html', iform=iform)
 
 
 if __name__ == '__main__':

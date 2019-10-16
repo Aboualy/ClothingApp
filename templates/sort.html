@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="content-section">
+        <form class="form-inline my-2 my-lg-0" method="POST" action="/sort">
+            {{ iform.hidden_tag() }}
+            <fieldset class="form-group">
+                <div class="form-group">
+                    {{ iform.myField.label(class="form-control-label") }}
+
+                    {% if iform.myField.errors %}
+                        {{ iform.myField(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in iform.myField.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ iform.myField(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+              <div class="form-group">
+                    </div>
+            </fieldset>
+            <div class="form-group">
+                {{ iform.submit(class="btn btn-primary custom-btn") }}
+            </div>
+        </form>
+    </div>
+{% endblock content %}

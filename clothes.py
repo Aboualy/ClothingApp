@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, FileField, SubmitField, SelectField
+from wtforms import StringField, TextAreaField, FileField, SubmitField, SelectField, IntegerField, FloatField
 from wtforms.validators import DataRequired, Length
 
 
@@ -10,7 +10,7 @@ class ClothesForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(min=4, max=30)])
     gender = SelectField('Gender', validators=[DataRequired()], choices=GENDER_CHOICES)
     size = SelectField('Size', validators=[DataRequired()], choices=SIZE_CHOICES)
-    price = StringField('Price', validators=[DataRequired(), Length(min=1, max=5)])
+    price = FloatField('Price')
     des = TextAreaField('Description', validators=[DataRequired(), Length(min=1, max=100)])
     pic = FileField(' Add a picture', validators=[DataRequired()])
     submit = SubmitField('Post')

@@ -1,17 +1,28 @@
-
 {% extends "layout.html" %}
 {% block content %}
+    <div class="content-section">
+        <form class="form-inline my-2 my-lg-0" method="POST" action="/search">
+            {{ form.hidden_tag() }}
+            <fieldset class="form-group">
+                <div class="form-group">
+                    {{ form.gare.label(class="form-control-label") }}
 
-<div class="page-header">
-  <form style="display: inline;" action="{{ url_for('home') }}" method="post" name="search">
-    {{ form.garment_search(size=20) }}
-    <input type="submit" value="Search">
-  </form>
-
-  {% if results %}
-    <h1>Search results for "{{ query }}":</h1>
-    {{ results }}
-  {% endif %}
-</div>
-
+                    {% if form.gare.errors %}
+                        {{ form.gare(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.gare.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.gare(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+              <div class="form-group">
+            </fieldset>
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary custom-btn") }}
+            </div>
+        </form>
+    </div>
 {% endblock content %}

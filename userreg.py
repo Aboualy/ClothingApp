@@ -1,7 +1,5 @@
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed, FileRequired
-from flask_login import current_user
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField
+from wtforms import StringField, PasswordField, SubmitField, SelectField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from db_handling import User
 
@@ -32,8 +30,18 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('That email is taken. Please choose a different one.')
 
 
-
 class searchForm(FlaskForm):
     garment_search = StringField('Search garment', validators=[DataRequired(), Length(max=60)])
+
+
+class sForm(FlaskForm):
+    gare = StringField('', filters=[lambda x: x])
+    submit = SubmitField('Search')
+
+
+class Inputs(FlaskForm):
+    myChoices = [('price', 'price'),('date', 'date')]
+    myField = SelectField(u'Field name', choices = myChoices, validators=[DataRequired()])
+    submit = SubmitField('Sort')
 
 
