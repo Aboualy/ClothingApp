@@ -1,17 +1,14 @@
 import os
 import secrets
-from PIL import Image
-from werkzeug.datastructures import FileStorage
 import base64
 from flask import render_template, url_for, flash, redirect, request, abort
 from flask_login import login_user, current_user, logout_user, login_required
-from werkzeug.utils import secure_filename
-
-from clothes import ClothesForm
+from appforms import ClothesForm
 from db_handling import User, Garment
-from loginpage import LoginForm
-from userreg import RegistrationForm, searchForm, sForm, Inputs
+from appforms import LoginForm
+from appforms import RegistrationForm, searchForm, sForm, Inputs
 from db_config import bcrypt, db, app
+
 
 @app.route("/")
 @app.route("/home")
@@ -159,7 +156,6 @@ def sort():
             garments = Garment.query.order_by(Garment.price.desc())
         elif sort_value == "date":
             garments = Garment.query.order_by(Garment.date_posted.desc())
-
 
         return render_template('home.html', garments=garments, form=form, iform=iform)
 

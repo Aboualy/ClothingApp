@@ -71,10 +71,9 @@ a.article-title:hover {
 }
 
 .bb{
-
-
     background-color: #002f6c;
     border-color: white;
+    padding: 10px;
 }
 
 .article-svg {
