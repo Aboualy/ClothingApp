@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
+# coding: utf8
 import os
 import secrets
 import base64
-from flask import render_template, url_for, flash, redirect, request, abort
 from flask_login import login_user, current_user, logout_user, login_required
-from appforms import ClothesForm
-from db_handling import User, Garment
+from sqlalchemy import or_
+from flask import Flask, render_template, url_for, flash, redirect, request, abort
+from appforms import ClothesForm, MessageSeller
+from db_handling import User, Garment, Message
 from appforms import LoginForm
 from appforms import RegistrationForm, searchForm, sForm, Inputs
 from db_config import bcrypt, db, app
@@ -14,10 +17,11 @@ from db_config import bcrypt, db, app
 @app.route("/home")
 def home(garments=None, *args):
     form = sForm()
+    mSeller = MessageSeller()
     iform = Inputs()
     if garments is None:
         garments = Garment.query.all()
-    return render_template('home.html', garments=garments, form=form, iform=iform)
+    return render_template('home.html', garments=garments, form=form, iform=iform, mSeller=mSeller)
 
 
 @app.route("/about")
@@ -27,19 +31,46 @@ def about():
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
+    users = User.query
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = RegistrationForm()
     if form.validate_on_submit():
         #hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        user = User(username=form.username.data, firstname=form.firstname.data, lastname=form.lastname.data, email=form.email.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        flash('Your account has been created! You are now able to log in', 'success')
-        return redirect(url_for('login'))
+
+        #usr = users.filter_by(email=email).first()
+        if db.session.query(User).filter_by(email=form.email.data).count() < 1:
+            user = User(username=form.username.data, firstname=form.firstname.data, lastname=form.lastname.data, email=form.email.data)
+            user.set_password(form.password.data)
+            db.session.add(user)
+            db.session.commit()
+            flash('Your account has been created! You are now able to log in', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('email is already registered', 'success')
+
     return render_template('register.html', title='Register', form=form)
 
+
+@app.route("/home/<int:garment_id>/message", methods=['GET', 'POST'])
+def message(garment_id):
+    mSeller = MessageSeller()
+    garments = Garment.query
+    users = User.query
+    if mSeller.validate_on_submit():
+        if current_user.is_authenticated:
+            flash(f'You cannot send a message to yourself!', 'failure')
+        else:
+            gar = garments.filter_by(id=garment_id).first()
+            userid = gar.user_id
+            user = users.filter_by(id=userid).first()
+            message = Message(gar_name= gar.title, msg=mSeller.msg.data, sender=user, )
+            db.session.add(message)
+            db.session.commit()
+            flash('Your message have been successfully sent!', 'success')
+            return redirect(url_for('home'))
+    return render_template('message.html', title='Message seller',
+                           mSeller=mSeller, legend='Message seller')
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -67,15 +98,15 @@ def logout():
 @login_required
 def account():
     garments = Garment.query.all()
-
-    return render_template('account.html', title='Account',garments=garments)
+    messages = Message.query.all()
+    return render_template('account.html', title='Account', garments=garments, messages=messages)
 
 
 @app.route("/garment/<int:garment_id>/update", methods=['GET', 'POST'])
 @login_required
 def update_garment(garment_id):
     garment = Garment.query.get_or_404(garment_id)
-    if garment.author != current_user:
+    if garment.seller != current_user:
         abort(403)
     form = ClothesForm()
     if form.validate_on_submit():
@@ -115,7 +146,8 @@ def new_garment():
         gender = str(form.gender.data)
         size = str(form.size.data)
         pic = f'{base64.b64encode(form.pic.data.read()).decode("utf-8")}'
-        garment = Garment(title=form.title.data,  gender=gender, size=size, price=form.price.data, des=form.des.data, author=current_user, pic=pic)
+        print("Hello", current_user)
+        garment = Garment(title=form.title.data,  gender=gender, size=size, price=form.price.data,  des=form.des.data, seller=current_user, pic=pic)
         db.session.add(garment)
         db.session.commit()
         flash('Your clothes have been successfully added!', 'success')
@@ -132,12 +164,17 @@ def garment(garment_id):
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
+    mSeller = MessageSeller()
     form = sForm()
     iform = Inputs()
     garments = Garment.query
     if form.validate_on_submit():
         search_term = form.gare.data
-        garments = garments.filter(Garment.des.like('%' + search_term + '%'))
+        #garments = garments.filter( Garment.des.like('%' +search_term +'%'))
+        garments = garments.filter(or_(Garment.des.like('%' + search_term + '%'), Garment.title.like('%' + search_term + '%'),
+                                       Garment.price.like('%' + search_term + '%'), Garment.size.like('%' + search_term + '%'),
+                                       Garment.gender.like('%' + search_term + '%')
+                                       ))
         garments = garments.order_by(Garment.des).all()
        # return render_template('search.html', form=form, results=results)
         return render_template('home.html', garments=garments, form=form, iform=iform)
@@ -149,15 +186,20 @@ def search():
 def sort():
     form = sForm()
     iform = Inputs()
+    mSeller = MessageSeller()
     garments = Garment.query
     if  iform.validate_on_submit():
-        sort_value =  iform.myField.data
+        sort_value = iform.myField.data
         if sort_value == "price":
             garments = Garment.query.order_by(Garment.price.desc())
         elif sort_value == "date":
             garments = Garment.query.order_by(Garment.date_posted.desc())
+        elif sort_value == "gender":
+            garments = Garment.query.order_by(Garment.gender.desc())
+        elif sort_value == "size":
+            garments = Garment.query.order_by(Garment.size.desc())
 
-        return render_template('home.html', garments=garments, form=form, iform=iform)
+        return render_template('home.html', garments=garments, form=form, iform=iform, mSeller=mSeller)
 
     return render_template('sort.html', iform=iform)
 

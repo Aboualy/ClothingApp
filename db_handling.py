@@ -16,11 +16,12 @@ def load_user(user_id):
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
-    firstname = db.Column(db.String(20), unique=True, nullable=False)
-    lastname = db.Column(db.String(20), unique=True, nullable=False)
+    firstname = db.Column(db.String(20),  nullable=False)
+    lastname = db.Column(db.String(20),  nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
-    garments = db.relationship('Garment', backref='author', lazy=True)
+    garments = db.relationship('Garment', backref='seller', lazy=True)
+    messages = db.relationship('Message', backref='sender', lazy=True)
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
@@ -30,6 +31,7 @@ class User(db.Model, UserMixin):
 
     def check_password(self, secret):
         return check_password_hash(self.password, secret)
+
 
 class Garment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -44,4 +46,12 @@ class Garment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
-        return f"Post('{self.title}', '{self.date_posted}')"
+        return f"Garment('{self.title}', '{self.date_posted}')"
+
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    gar_name = db.Column(db.Text, nullable=False)
+    msg = db.Column(db.Text, nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    #receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

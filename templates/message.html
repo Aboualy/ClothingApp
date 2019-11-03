@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="content-section">
+  <form method="POST" action="" enctype="multipart/form-data">
+            {{ mSeller.hidden_tag() }}
+            <fieldset class="form-group">
+                <legend class="border-bottom mb-4">Send a message</legend>
+                <div class="form-group">
+                    {{ mSeller.msg.label(class="form-control-label") }}
+
+                    {% if mSeller.msg.errors %}
+                        {{ mSeller.msg(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in mSeller.msg.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ mSeller.msg(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            </fieldset>
+            <div class="form-group">
+                {{ mSeller.submit(class="btn btn-primary btn-lg active") }}
+            </div>
+        </form>
+</div>
+{% endblock content %}

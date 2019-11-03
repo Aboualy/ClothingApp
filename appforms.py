@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, FloatField, TextAreaField, FileField, \
-    BooleanField
+    BooleanField, IntegerField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from db_handling import User
 
@@ -32,7 +32,7 @@ class RegistrationForm(FlaskForm):
 
 
 class searchForm(FlaskForm):
-    garment_search = StringField('Search garment', validators=[DataRequired(), Length(max=60)])
+    garment_search = StringField('Search garment', render_kw={'style':'height:10%'}, validators=[DataRequired(), Length(max=60)])
 
 
 class sForm(FlaskForm):
@@ -41,9 +41,14 @@ class sForm(FlaskForm):
 
 
 class Inputs(FlaskForm):
-    myChoices = [('price', 'price'),('date', 'date')]
+    myChoices = [('price', 'price'),('date', 'date'),('gender', 'gender'),('size', 'size')]
     myField = SelectField(u'', choices=myChoices, validators=[DataRequired()])
     submit = SubmitField('Sort')
+
+
+class MessageSeller(FlaskForm):
+    msg = TextAreaField('', validators=[DataRequired(), Length(min=1, max=400)])
+    submit = SubmitField('Send')
 
 
 class ClothesForm(FlaskForm):
@@ -54,7 +59,7 @@ class ClothesForm(FlaskForm):
     gender = SelectField('Gender', validators=[DataRequired()], choices=GENDER_CHOICES)
     size = SelectField('Size', validators=[DataRequired()], choices=SIZE_CHOICES)
     price = FloatField('Price')
-    des = TextAreaField('Description', validators=[DataRequired(), Length(min=1, max=100)])
+    des = TextAreaField('Description', validators=[DataRequired(), Length(min=1, max=400)])
     pic = FileField(' Add a picture', validators=[DataRequired()])
     submit = SubmitField('Post')
 
