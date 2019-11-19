@@ -9,8 +9,8 @@ from appforms import RegistrationForm, sForm, Inputs, LoginForm, ClothesForm, Me
 from db_handling import User, Garment, Message
 
 
-@app.route("/")
-@app.route("/home")
+@app.route("familyclothing.herokuapp.com")
+@app.route("familyclothing.herokuapp.com")
 def home(garments=None, *args):
     """
     The home page fetches and renders all the clothes available in our database and in addition it has a number of forms
@@ -27,12 +27,12 @@ def home(garments=None, *args):
     return render_template('home.html', garments=garments, form=form, iform=iform, mSeller=mSeller)
 
 
-@app.route("/about")
+@app.route("familyclothing.herokuapp.com/about")
 def about():
     return render_template('about.html', title='About')
 
 
-@app.route("/register", methods=['GET', 'POST'])
+@app.route("familyclothing.herokuapp.com/register", methods=['GET', 'POST'])
 def register():
     """
     Register page has a registration form that allows an end-user to create a Login Credentials
@@ -56,7 +56,7 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 
-@app.route("/home/<int:garment_id>/message", methods=['GET', 'POST'])
+@app.route("familyclothing.herokuapp.com/<int:garment_id>/message", methods=['GET', 'POST'])
 def message(garment_id):
     """
      web page with a message form
@@ -81,7 +81,7 @@ def message(garment_id):
     return render_template('message.html', title='Message seller',
                            mSeller=mSeller, legend='Message seller')
 
-@app.route("/login", methods=['GET', 'POST'])
+@app.route("familyclothing.herokuapp.com/login", methods=['GET', 'POST'])
 def login():
     """
      A web page that allows an end-user with login credentials to login
@@ -101,13 +101,13 @@ def login():
     return render_template('login.html', title='Login', form=form)
 
 
-@app.route("/logout")
+@app.route("familyclothing.herokuapp.com/logout")
 def logout():
     logout_user()
     return redirect(url_for('home'))
 
 
-@app.route("/account", methods=['GET', 'POST'])
+@app.route("familyclothing.herokuapp.com/account", methods=['GET', 'POST'])
 @login_required
 def account():
     garments = Garment.query.all()
