@@ -10,6 +10,7 @@ from . import config  # noqa
 from . import mock  # noqa
 from .assertions import assert_raises  # noqa
 from .assertions import assert_raises_message  # noqa
+from .assertions import assert_raises_return  # noqa
 from .assertions import AssertsCompiledSQL  # noqa
 from .assertions import AssertsExecutionResults  # noqa
 from .assertions import ComparesTables  # noqa
@@ -30,7 +31,9 @@ from .assertions import ne_  # noqa
 from .assertions import not_in_  # noqa
 from .assertions import startswith_  # noqa
 from .assertions import uses_deprecated  # noqa
+from .config import combinations  # noqa
 from .config import db  # noqa
+from .config import fixture  # noqa
 from .config import requirements as requires  # noqa
 from .exclusions import _is_excluded  # noqa
 from .exclusions import _server_version  # noqa
@@ -49,6 +52,7 @@ from .exclusions import skip_if  # noqa
 from .util import adict  # noqa
 from .util import fail  # noqa
 from .util import force_drop_names  # noqa
+from .util import metadata_fixture  # noqa
 from .util import provide_metadata  # noqa
 from .util import rowset  # noqa
 from .util import run_as_contextmanager  # noqa

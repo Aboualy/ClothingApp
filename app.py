@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 # coding: utf8
-import os
-import secrets
-import base64
 from flask_login import login_user, current_user, logout_user, login_required
+from flask import render_template, url_for, flash, redirect, request, abort
 from sqlalchemy import or_
-from flask import Flask, render_template, url_for, flash, redirect, request, abort
-from appforms import ClothesForm, MessageSeller
-from db_handling import User, Garment, Message
-from appforms import LoginForm
-from appforms import RegistrationForm, searchForm, sForm, Inputs
+import base64
 from db_config import bcrypt, db, app
+from appforms import RegistrationForm, sForm, Inputs, LoginForm, ClothesForm, MessageSeller
+from db_handling import User, Garment, Message
 
 
 @app.route("/")
 @app.route("/home")
 def home(garments=None, *args):
+    """
+    The home page fetches and renders all the clothes available in our database and in addition it has a number of forms
+    e.g. search form, messageSeller form and sort form with a view to providing more functionalities to the end-user.
+    :param garments: all the clothes stored in our database
+    :param args:
+    :return:
+    """
     form = sForm()
     mSeller = MessageSeller()
     iform = Inputs()
@@ -31,14 +34,15 @@ def about():
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
+    """
+    Register page has a registration form that allows an end-user to create a Login Credentials
+    :return:
+    """
     users = User.query
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        #hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-
-        #usr = users.filter_by(email=email).first()
         if db.session.query(User).filter_by(email=form.email.data).count() < 1:
             user = User(username=form.username.data, firstname=form.firstname.data, lastname=form.lastname.data, email=form.email.data)
             user.set_password(form.password.data)
@@ -54,6 +58,11 @@ def register():
 
 @app.route("/home/<int:garment_id>/message", methods=['GET', 'POST'])
 def message(garment_id):
+    """
+     web page with a message form
+    :param garment_id: the unique id that each clothes (post) has
+    :return:  renders a page with a message form that allows an en user to contact a specific seller
+    """
     mSeller = MessageSeller()
     garments = Garment.query
     users = User.query
@@ -74,6 +83,10 @@ def message(garment_id):
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
+    """
+     A web page that allows an end-user with login credentials to login
+    :return:
+    """
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = LoginForm()
@@ -105,6 +118,11 @@ def account():
 @app.route("/garment/<int:garment_id>/update", methods=['GET', 'POST'])
 @login_required
 def update_garment(garment_id):
+    """
+    A web page that allows an end-user with login credentials to update a specific clothes
+    :param garment_id:
+    :return:
+    """
     garment = Garment.query.get_or_404(garment_id)
     if garment.seller != current_user:
         abort(403)
@@ -131,6 +149,11 @@ def update_garment(garment_id):
 @app.route("/garment/<int:garment_id>/delete", methods=['POST'])
 @login_required
 def delete_garment(garment_id):
+    """
+    A web page that allows an end-user with login credentials to delete a specific clothes
+    :param garment_id:
+    :return:
+    """
     garment = Garment.query.get_or_404(garment_id)
     db.session.delete(garment)
     db.session.commit()
@@ -141,12 +164,14 @@ def delete_garment(garment_id):
 @app.route("/garment/new", methods=['GET', 'POST'])
 @login_required
 def new_garment():
+    """
+    A web page that allows an end-user to add new clothes
+    """
     form = ClothesForm()
     if form.validate_on_submit():
         gender = str(form.gender.data)
         size = str(form.size.data)
         pic = f'{base64.b64encode(form.pic.data.read()).decode("utf-8")}'
-        print("Hello", current_user)
         garment = Garment(title=form.title.data,  gender=gender, size=size, price=form.price.data,  des=form.des.data, seller=current_user, pic=pic)
         db.session.add(garment)
         db.session.commit()
@@ -164,6 +189,10 @@ def garment(garment_id):
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
+    """
+     A web page (with a search form) embedded into our home page that allows an end-user to make a search
+    :return:  the result of the search process
+    """
     mSeller = MessageSeller()
     form = sForm()
     iform = Inputs()
@@ -184,6 +213,10 @@ def search():
 
 @app.route('/sort', methods=['GET', 'POST'])
 def sort():
+    """
+     A web page (with a sort form) embedded into our home page that allows an end-user to sort clothes
+    :return: the output is then sorted according to a consumer selection  
+    """
     form = sForm()
     iform = Inputs()
     mSeller = MessageSeller()

@@ -40,11 +40,7 @@ def instances(query, cursor, context):
 
     filtered = query._has_mapper_entities
 
-    single_entity = (
-        not query._only_return_tuples
-        and len(query._entities) == 1
-        and query._entities[0].supports_single_entity
-    )
+    single_entity = query.is_single_entity
 
     if filtered:
         if single_entity:
@@ -245,6 +241,12 @@ def load_on_pk_identity(
             )
             _get_clause = sql_util.adapt_criterion_to_null(_get_clause, nones)
 
+            if len(nones) == len(primary_key_identity):
+                util.warn(
+                    "fully NULL primary key identity cannot load any "
+                    "object.  This condition may raise an error in a future "
+                    "release."
+                )
         _get_clause = q._adapt_clause(_get_clause, True, False)
         q._criterion = _get_clause
 

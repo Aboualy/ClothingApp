@@ -409,7 +409,7 @@ for UPDATE::
 
     The :meth:`.Insert.on_conflict_do_update` method does **not** take into
     account Python-side default UPDATE values or generation functions, e.g.
-    e.g. those specified using :paramref:`.Column.onupdate`.
+    those specified using :paramref:`.Column.onupdate`.
     These values will not be exercised for an ON CONFLICT style of UPDATE,
     unless they are manually specified in the
     :paramref:`.Insert.on_conflict_do_update.set_` dictionary.
@@ -1557,13 +1557,36 @@ class PGCompiler(compiler.SQLCompiler):
             self.process(element.stop, **kw),
         )
 
-    def visit_json_getitem_op_binary(self, binary, operator, **kw):
-        kw["eager_grouping"] = True
-        return self._generate_generic_binary(binary, " -> ", **kw)
+    def visit_json_getitem_op_binary(
+        self, binary, operator, _cast_applied=False, **kw
+    ):
+        if (
+            not _cast_applied
+            and binary.type._type_affinity is not sqltypes.JSON
+        ):
+            kw["_cast_applied"] = True
+            return self.process(sql.cast(binary, binary.type), **kw)
 
-    def visit_json_path_getitem_op_binary(self, binary, operator, **kw):
         kw["eager_grouping"] = True
-        return self._generate_generic_binary(binary, " #> ", **kw)
+
+        return self._generate_generic_binary(
+            binary, " -> " if not _cast_applied else " ->> ", **kw
+        )
+
+    def visit_json_path_getitem_op_binary(
+        self, binary, operator, _cast_applied=False, **kw
+    ):
+        if (
+            not _cast_applied
+            and binary.type._type_affinity is not sqltypes.JSON
+        ):
+            kw["_cast_applied"] = True
+            return self.process(sql.cast(binary, binary.type), **kw)
+
+        kw["eager_grouping"] = True
+        return self._generate_generic_binary(
+            binary, " #> " if not _cast_applied else " #>> ", **kw
+        )
 
     def visit_getitem_binary(self, binary, operator, **kw):
         return "%s[%s]" % (
@@ -1873,6 +1896,9 @@ class PGDDLCompiler(compiler.DDLCompiler):
             if default is not None:
                 colspec += " DEFAULT " + default
 
+        if column.computed is not None:
+            colspec += " " + self.process(column.computed)
+
         if not column.nullable:
             colspec += " NOT NULL"
         return colspec
@@ -2042,6 +2068,18 @@ class PGDDLCompiler(compiler.DDLCompiler):
             )
 
         return "".join(table_opts)
+
+    def visit_computed_column(self, generated):
+        if generated.persisted is False:
+            raise exc.CompileError(
+                "PostrgreSQL computed columns do not support 'virtual' "
+                "persistence; set the 'persisted' flag to None or True for "
+                "PostgreSQL support."
+            )
+
+        return "GENERATED ALWAYS AS (%s) STORED" % self.sql_compiler.process(
+            generated.sqltext, include_table=False, literal_binds=True
+        )
 
 
 class PGTypeCompiler(compiler.GenericTypeCompiler):

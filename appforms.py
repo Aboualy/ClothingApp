@@ -4,8 +4,10 @@ from wtforms import StringField, PasswordField, SubmitField, SelectField, FloatF
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from db_handling import User
 
-
 class RegistrationForm(FlaskForm):
+    """
+    New member application/form which has a number of fields, namely user name, firstName, lastName, email, and password
+    """
     username = StringField('Username',
                            validators=[DataRequired(), Length(min=2, max=20)])
     firstname = StringField('First Name',
@@ -15,7 +17,7 @@ class RegistrationForm(FlaskForm):
 
     email = StringField('Email',
                         validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=7, max=20)])
     confirm_password = PasswordField('Confirm Password',
                                      validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Sign Up')
@@ -31,25 +33,12 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('That email is taken. Please choose a different one.')
 
 
-class searchForm(FlaskForm):
-    garment_search = StringField('Search garment', render_kw={'style':'height:10%'}, validators=[DataRequired(), Length(max=60)])
-
-
 class sForm(FlaskForm):
+    """
+    A search form/field in our home page that allows end-users to search clothes from our database
+     """
     gare = StringField('', filters=[lambda x: x])
     submit = SubmitField('Search')
-
-
-class Inputs(FlaskForm):
-    myChoices = [('price', 'price'),('date', 'date'),('gender', 'gender'),('size', 'size')]
-    myField = SelectField(u'', choices=myChoices, validators=[DataRequired()])
-    submit = SubmitField('Sort')
-
-
-class MessageSeller(FlaskForm):
-    msg = TextAreaField('', validators=[DataRequired(), Length(min=1, max=400)])
-    submit = SubmitField('Send')
-
 
 class ClothesForm(FlaskForm):
     #def __init__(self):
@@ -61,9 +50,38 @@ class ClothesForm(FlaskForm):
     price = FloatField('Price')
     des = TextAreaField('Description', validators=[DataRequired(), Length(min=1, max=400)])
     pic = FileField(' Add a picture', validators=[DataRequired()])
+
+    #pic = FileField(u'Image File', [validators.regexp(u'^[^/\\]\.jpg$')])
+    #description = TextAreaField(u'Image Description')
+
+
+
+
+
     submit = SubmitField('Post')
 
+
+class Inputs(FlaskForm):
+    """
+    A sort form/field in our home page that allows end-users to sort clothes based on price, date, gender or size.
+    """
+    myChoices = [('price', 'price'),('date', 'date'),('gender', 'gender'),('size', 'size')]
+    myField = SelectField(u'', choices=myChoices, validators=[DataRequired()])
+    submit = SubmitField('Sort')
+
+
+class MessageSeller(FlaskForm):
+    """
+    A message form in our home page that allows end-users to contact seller.
+    """
+    msg = TextAreaField('', validators=[DataRequired(), Length(min=1, max=400)])
+    submit = SubmitField('Send')
+
+
 class LoginForm(FlaskForm):
+    """
+    A login form that allows authorized users to login to out web app and post new clothes and read buyers messages
+    """
     email = StringField('Email',
                         validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])

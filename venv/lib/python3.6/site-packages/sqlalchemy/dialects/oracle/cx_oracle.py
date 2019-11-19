@@ -78,6 +78,8 @@ The parameters accepted by the cx_oracle dialect are as follows:
 
 * ``coerce_to_decimal`` - see :ref:`cx_oracle_numeric` for detail.
 
+* ``encoding_errors`` - see :ref:`cx_oracle_unicode_encoding_errors` for detail.
+
 .. _cx_oracle_unicode:
 
 Unicode
@@ -122,6 +124,23 @@ VARCHAR2, CHAR, and CLOB, the flag ``coerce_to_unicode=False`` can be passed to
    by default under python 2.  The ``coerce_to_unicode`` now defaults to True
    and can be set to False to disable the Unicode coercion of strings that are
    delivered as VARCHAR2/CHAR/CLOB data.
+
+
+.. _cx_oracle_unicode_encoding_errors:
+
+Encoding Errors
+^^^^^^^^^^^^^^^
+
+For the unusual case that data in the Oracle database is present with a broken
+encoding, the dialect accepts a parameter ``encoding_errors`` which will be
+passed to Unicode decoding functions in order to affect how decoding errors are
+handled.  The value is ultimately consumed by the Python `decode
+<https://docs.python.org/3/library/stdtypes.html#bytes.decode>`_ function, and
+is passed both via cx_Oracle's ``encodingErrors`` parameter consumed by
+``Cursor.var()``, as well as SQLAlchemy's own decoding function, as the
+cx_Oracle dialect makes use of both under different circumstances.
+
+.. versionadded:: 1.3.11
 
 
 .. _cx_oracle_setinputsizes:
@@ -429,9 +448,16 @@ class _OracleDate(sqltypes.Date):
         return process
 
 
+# TODO: the names used across CHAR / VARCHAR / NCHAR / NVARCHAR
+# here are inconsistent and not very good
 class _OracleChar(sqltypes.CHAR):
     def get_dbapi_type(self, dbapi):
         return dbapi.FIXED_CHAR
+
+
+class _OracleNChar(sqltypes.NCHAR):
+    def get_dbapi_type(self, dbapi):
+        return dbapi.FIXED_NCHAR
 
 
 class _OracleUnicodeStringNCHAR(oracle.NVARCHAR2):
@@ -722,12 +748,12 @@ class OracleDialect_cx_oracle(OracleDialect):
         sqltypes.String: _OracleString,
         sqltypes.UnicodeText: _OracleUnicodeTextCLOB,
         sqltypes.CHAR: _OracleChar,
+        sqltypes.NCHAR: _OracleNChar,
         sqltypes.Enum: _OracleEnum,
         oracle.LONG: _OracleLong,
         oracle.RAW: _OracleRaw,
         sqltypes.Unicode: _OracleUnicodeStringCHAR,
         sqltypes.NVARCHAR: _OracleUnicodeStringNCHAR,
-        sqltypes.NCHAR: _OracleUnicodeStringNCHAR,
         oracle.NCLOB: _OracleUnicodeTextNCLOB,
         oracle.ROWID: _OracleRowid,
     }
@@ -753,12 +779,14 @@ class OracleDialect_cx_oracle(OracleDialect):
         coerce_to_unicode=True,
         coerce_to_decimal=True,
         arraysize=50,
+        encoding_errors=None,
         threaded=None,
         **kwargs
     ):
 
         OracleDialect.__init__(self, **kwargs)
         self.arraysize = arraysize
+        self.encoding_errors = encoding_errors
         if threaded is not None:
             self._cx_oracle_threaded = threaded
         self.auto_convert_lobs = auto_convert_lobs
@@ -815,6 +843,19 @@ class OracleDialect_cx_oracle(OracleDialect):
                 self._returningval = self._paramval
 
         self._is_cx_oracle_6 = self.cx_oracle_ver >= (6,)
+
+    @property
+    def _cursor_var_unicode_kwargs(self):
+        if self.encoding_errors:
+            if self.cx_oracle_ver >= (6, 4):
+                return {"encodingErrors": self.encoding_errors}
+            else:
+                util.warn(
+                    "cx_oracle version %r does not support encodingErrors"
+                    % (self.cx_oracle_ver,)
+                )
+
+        return {}
 
     def _parse_cx_oracle_ver(self, version):
         m = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", version)
@@ -913,7 +954,7 @@ class OracleDialect_cx_oracle(OracleDialect):
             ):
                 if compat.py2k:
                     outconverter = processors.to_unicode_processor_factory(
-                        dialect.encoding, None
+                        dialect.encoding, errors=dialect.encoding_errors
                     )
                     return cursor.var(
                         cx_Oracle.STRING,
@@ -922,7 +963,12 @@ class OracleDialect_cx_oracle(OracleDialect):
                         outconverter=outconverter,
                     )
                 else:
-                    return cursor.var(util.text_type, size, cursor.arraysize)
+                    return cursor.var(
+                        util.text_type,
+                        size,
+                        cursor.arraysize,
+                        **dialect._cursor_var_unicode_kwargs
+                    )
 
             elif dialect.auto_convert_lobs and default_type in (
                 cx_Oracle.CLOB,
@@ -930,7 +976,7 @@ class OracleDialect_cx_oracle(OracleDialect):
             ):
                 if compat.py2k:
                     outconverter = processors.to_unicode_processor_factory(
-                        dialect.encoding, None
+                        dialect.encoding, errors=dialect.encoding_errors
                     )
                     return cursor.var(
                         default_type,
@@ -944,6 +990,7 @@ class OracleDialect_cx_oracle(OracleDialect):
                         size,
                         cursor.arraysize,
                         outconverter=lambda value: value.read(),
+                        **dialect._cursor_var_unicode_kwargs
                     )
 
             elif dialect.auto_convert_lobs and default_type in (

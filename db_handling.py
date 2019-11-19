@@ -14,6 +14,9 @@ def load_user(user_id):
 
 
 class User(db.Model, UserMixin):
+    """
+    Saving new users data into our database
+    """
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     firstname = db.Column(db.String(20),  nullable=False)
@@ -34,6 +37,9 @@ class User(db.Model, UserMixin):
 
 
 class Garment(db.Model):
+    """
+    Saving clothes posted by users with login credentials into our database
+    """
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     gender = db.Column(db.String(100), nullable=False)
@@ -50,6 +56,9 @@ class Garment(db.Model):
 
 
 class Message(db.Model):
+    """
+    Saving messages from guest(buyers) to seller in our database
+    """
     id = db.Column(db.Integer, primary_key=True)
     gar_name = db.Column(db.Text, nullable=False)
     msg = db.Column(db.Text, nullable=False)

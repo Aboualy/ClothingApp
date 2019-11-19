@@ -454,6 +454,7 @@ columns for non-unique indexes, all but the last column for unique indexes).
 from itertools import groupby
 import re
 
+from ... import Computed
 from ... import exc
 from ... import schema as sa_schema
 from ... import sql
@@ -465,7 +466,6 @@ from ...sql import compiler
 from ...sql import expression
 from ...sql import util as sql_util
 from ...sql import visitors
-from ...sql.elements import quoted_name
 from ...types import BLOB
 from ...types import CHAR
 from ...types import CLOB
@@ -913,6 +913,16 @@ class OracleCompiler(compiler.SQLCompiler):
         for i, column in enumerate(
             expression._select_iterables(returning_cols)
         ):
+            if self.isupdate and isinstance(column.server_default, Computed):
+                util.warn(
+                    "Computed columns don't work with Oracle UPDATE "
+                    "statements that use RETURNING; the value of the column "
+                    "*before* the UPDATE takes place is returned.   It is "
+                    "advised to not use RETURNING with an Oracle computed "
+                    "column.  Consider setting implicit_returning to False on "
+                    "the Table object in order to avoid implicit RETURNING "
+                    "clauses from being generated for this Table."
+                )
             if column.type._has_column_expression:
                 col_expr = column.type.column_expression(column)
             else:
@@ -1152,6 +1162,19 @@ class OracleDDLCompiler(compiler.DDLCompiler):
 
         return "".join(table_opts)
 
+    def visit_computed_column(self, generated):
+        text = "GENERATED ALWAYS AS (%s)" % self.sql_compiler.process(
+            generated.sqltext, include_table=False, literal_binds=True
+        )
+        if generated.persisted is True:
+            raise exc.CompileError(
+                "Oracle computed columns do not support 'stored' persistence; "
+                "set the 'persisted' flag to None or False for Oracle support."
+            )
+        elif generated.persisted is False:
+            text += " VIRTUAL"
+        return text
+
 
 class OracleIdentifierPreparer(compiler.IdentifierPreparer):
 
@@ -1356,35 +1379,6 @@ class OracleDialect(default.DefaultDialect):
             schema_name=self.denormalize_name(schema),
         )
         return cursor.first() is not None
-
-    def normalize_name(self, name):
-        if name is None:
-            return None
-        if util.py2k:
-            if isinstance(name, str):
-                name = name.decode(self.encoding)
-        if name.upper() == name and not (
-            self.identifier_preparer._requires_quotes
-        )(name.lower()):
-            return name.lower()
-        elif name.lower() == name:
-            return quoted_name(name, quote=True)
-        else:
-            return name
-
-    def denormalize_name(self, name):
-        if name is None:
-            return None
-        elif name.lower() == name and not (
-            self.identifier_preparer._requires_quotes
-        )(name.lower()):
-            name = name.upper()
-        if util.py2k:
-            if not self.supports_unicode_binds:
-                name = name.encode(self.encoding)
-            else:
-                name = unicode(name)  # noqa
-        return name
 
     def _get_default_schema_name(self, connection):
         return self.normalize_name(

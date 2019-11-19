@@ -2972,6 +2972,10 @@ class DDLCompiler(Compiled):
         text = "CREATE "
         if index.unique:
             text += "UNIQUE "
+        if index.name is None:
+            raise exc.CompileError(
+                "CREATE INDEX requires that the index have a name"
+            )
         text += "INDEX %s ON %s (%s)" % (
             self._prepared_index_name(index, include_schema=include_schema),
             preparer.format_table(
@@ -2988,6 +2992,11 @@ class DDLCompiler(Compiled):
 
     def visit_drop_index(self, drop):
         index = drop.element
+
+        if index.name is None:
+            raise exc.CompileError(
+                "DROP INDEX requires that the index have a name"
+            )
         return "\nDROP INDEX " + self._prepared_index_name(
             index, include_schema=True
         )
@@ -3099,6 +3108,9 @@ class DDLCompiler(Compiled):
         if default is not None:
             colspec += " DEFAULT " + default
 
+        if column.computed is not None:
+            colspec += " " + self.process(column.computed)
+
         if not column.nullable:
             colspec += " NOT NULL"
         return colspec
@@ -3201,7 +3213,8 @@ class DDLCompiler(Compiled):
         text = ""
         if constraint.name is not None:
             formatted_name = self.preparer.format_constraint(constraint)
-            text += "CONSTRAINT %s " % formatted_name
+            if formatted_name is not None:
+                text += "CONSTRAINT %s " % formatted_name
         text += "UNIQUE (%s)" % (
             ", ".join(self.preparer.quote(c.name) for c in constraint)
         )
@@ -3237,6 +3250,16 @@ class DDLCompiler(Compiled):
         text = ""
         if constraint.match is not None:
             text += " MATCH %s" % constraint.match
+        return text
+
+    def visit_computed_column(self, generated):
+        text = "GENERATED ALWAYS AS (%s)" % self.sql_compiler.process(
+            generated.sqltext, include_table=False, literal_binds=True
+        )
+        if generated.persisted is True:
+            text += " STORED"
+        elif generated.persisted is False:
+            text += " VIRTUAL"
         return text
 
 

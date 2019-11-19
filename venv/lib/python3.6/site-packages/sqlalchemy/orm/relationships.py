@@ -830,7 +830,16 @@ class RelationshipProperty(StrategizedProperty):
         :param omit_join:
           Allows manual control over the "selectin" automatic join
           optimization.  Set to ``False`` to disable the "omit join" feature
-          added in SQLAlchemy 1.3.
+          added in SQLAlchemy 1.3; or leave as ``None`` to leave automatic
+          optimization in place.
+
+          .. note:: This flag may only be set to ``False``.   It is not
+             necessary to set it to ``True`` as the "omit_join" optimization is
+             automatically detected; if it is not detected, then the
+             optimization is not supported.
+
+             .. versionchanged:: 1.3.11  setting ``omit_join`` to True will now
+                emit a warning as this was not the intended use of this flag.
 
           .. versionadded:: 1.3
 
@@ -861,6 +870,15 @@ class RelationshipProperty(StrategizedProperty):
         self.doc = doc
         self.active_history = active_history
         self.join_depth = join_depth
+        if omit_join:
+            util.warn(
+                "setting omit_join to True is not supported; selectin "
+                "loading of this relationship may not work correctly if this "
+                "flag is set explicitly.  omit_join optimization is "
+                "automatically detected for conditions under which it is "
+                "supported."
+            )
+
         self.omit_join = omit_join
         self.local_remote_pairs = _local_remote_pairs
         self.extension = extension
@@ -3102,7 +3120,6 @@ class JoinCondition(object):
         criterion, equivalent column sets, etc.
 
         """
-
         # place a barrier on the destination such that
         # replacement traversals won't ever dig into it.
         # its internal structure remains fixed
@@ -3131,17 +3148,22 @@ class JoinCondition(object):
         if aliased:
             if secondary is not None:
                 secondary = secondary.alias(flat=True)
-                primary_aliasizer = ClauseAdapter(secondary)
+                primary_aliasizer = ClauseAdapter(
+                    secondary, exclude_fn=_ColInAnnotations("local")
+                )
                 secondary_aliasizer = ClauseAdapter(
                     dest_selectable, equivalents=self.child_equivalents
                 ).chain(primary_aliasizer)
                 if source_selectable is not None:
-                    primary_aliasizer = ClauseAdapter(secondary).chain(
+                    primary_aliasizer = ClauseAdapter(
+                        secondary, exclude_fn=_ColInAnnotations("local")
+                    ).chain(
                         ClauseAdapter(
                             source_selectable,
                             equivalents=self.parent_equivalents,
                         )
                     )
+
                 secondaryjoin = secondary_aliasizer.traverse(secondaryjoin)
             else:
                 primary_aliasizer = ClauseAdapter(

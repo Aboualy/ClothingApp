@@ -125,6 +125,7 @@ class Query(object):
     _orm_only_from_obj_alias = True
     _current_path = _path_registry
     _has_mapper_entities = False
+    _bake_ok = True
 
     lazy_loaded_from = None
     """An :class:`.InstanceState` that is using this :class:`.Query` for a
@@ -189,11 +190,7 @@ class Query(object):
         # 4. can't do "if entities" because users make use of undocumented
         #    to_list() behavior here and they pass clause expressions that
         #    can't be evaluated as boolean.  See issue #4269.
-        # 5. the empty tuple is a singleton in cPython, take advantage of this
-        #    so that we can skip for the empty "*entities" case without using
-        #    any Python overloadable operators.
-        #
-        if entities is not ():
+        if entities != ():
             for ent in util.to_list(entities):
                 entity_wrapper(self, ent)
 
@@ -663,13 +660,39 @@ class Query(object):
 
     @_generative()
     def only_return_tuples(self, value):
-        """When set to True, the query results will always be a tuple,
-        specifically for single element queries. The default is False.
+        """When set to True, the query results will always be a tuple.
 
-    .   .. versionadded:: 1.2.5
+        This is specifically for single element queries. The default is False.
+
+        .. versionadded:: 1.2.5
+
+        .. seealso::
+
+            :meth:`.Query.is_single_entity`
 
         """
         self._only_return_tuples = value
+
+    @property
+    def is_single_entity(self):
+        """Indicates if this :class:`.Query` returns tuples or single entities.
+
+        Returns True if this query returns a single entity for each instance
+        in its result list, and False if this query returns a tuple of entities
+        for each result.
+
+        .. versionadded:: 1.3.11
+
+        .. seealso::
+
+            :meth:`.Query.only_return_tuples`
+
+        """
+        return (
+            not self._only_return_tuples
+            and len(self._entities) == 1
+            and self._entities[0].supports_single_entity
+        )
 
     @_generative()
     def enable_eagerloads(self, value):
@@ -1021,7 +1044,9 @@ class Query(object):
 
         is_dict = isinstance(primary_key_identity, dict)
         if not is_dict:
-            primary_key_identity = util.to_list(primary_key_identity)
+            primary_key_identity = util.to_list(
+                primary_key_identity, default=(None,)
+            )
 
         if len(primary_key_identity) != len(mapper.primary_key):
             raise sa_exc.InvalidRequestError(
@@ -3866,8 +3891,10 @@ class Query(object):
         if self.dispatch.before_compile:
             for fn in self.dispatch.before_compile:
                 new_query = fn(self)
-                if new_query is not None:
+                if new_query is not None and new_query is not self:
                     self = new_query
+                    if not fn._bake_ok:
+                        self._bake_ok = False
 
         context = QueryContext(self)
 

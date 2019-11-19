@@ -1563,19 +1563,51 @@ class TextClause(Executable, ClauseElement):
                 timestamp=datetime.datetime(2012, 10, 8, 15, 12, 5)
             )
 
+        The :meth:`.TextClause.bindparams` method also supports the concept of
+        **unique** bound parameters.  These are parameters that are
+        "uniquified" on name at statement compilation time, so that  multiple
+        :func:`.text` constructs may be combined together without the names
+        conflicting.  To use this feature, specify the
+        :paramref:`.BindParameter.unique` flag on each :func:`.bindparam`
+        object::
+
+            stmt1 = text("select id from table where name=:name").bindparams(
+                bindparam("name", value='name1', unique=True)
+            )
+            stmt2 = text("select id from table where name=:name").bindparams(
+                bindparam("name", value='name2', unique=True)
+            )
+
+            union = union_all(
+                stmt1.columns(column("id")),
+                stmt2.columns(column("id"))
+            )
+
+        The above statement will render as::
+
+            select id from table where name=:name_1
+            UNION ALL select id from table where name=:name_2
+
+        .. versionadded:: 1.3.11  Added support for the
+           :paramref:`.BindParameter.unique` flag to work with :func:`.text`
+           constructs.
+
         """
         self._bindparams = new_params = self._bindparams.copy()
 
         for bind in binds:
             try:
-                existing = new_params[bind.key]
+                # the regex used for text() currently will not match
+                # a unique/anonymous key in any case, so use the _orig_key
+                # so that a text() construct can support unique parameters
+                existing = new_params[bind._orig_key]
             except KeyError:
                 raise exc.ArgumentError(
                     "This text() construct doesn't define a "
-                    "bound parameter named %r" % bind.key
+                    "bound parameter named %r" % bind._orig_key
                 )
             else:
-                new_params[existing.key] = bind
+                new_params[existing._orig_key] = bind
 
         for key, value in names_to_values.items():
             try:
@@ -4025,7 +4057,11 @@ class ColumnClause(Immutable, ColumnElement):
     def _render_label_in_columns_clause(self):
         return self.table is not None
 
-    def _gen_label(self, name):
+    @property
+    def _ddl_label(self):
+        return self._gen_label(self.name, dedupe_on_key=False)
+
+    def _gen_label(self, name, dedupe_on_key=True):
         t = self.table
 
         if self.is_literal:
@@ -4049,15 +4085,22 @@ class ColumnClause(Immutable, ColumnElement):
                 assert not isinstance(label, quoted_name)
                 label = quoted_name(label, t.name.quote)
 
-            # ensure the label name doesn't conflict with that
-            # of an existing column
-            if label in t.c:
-                _label = label
-                counter = 1
-                while _label in t.c:
-                    _label = label + "_" + str(counter)
-                    counter += 1
-                label = _label
+            if dedupe_on_key:
+                # ensure the label name doesn't conflict with that of an
+                # existing column.   note that this implies that any Column
+                # must **not** set up its _label before its parent table has
+                # all of its other Column objects set up.  There are several
+                # tables in the test suite which will fail otherwise; example:
+                # table "owner" has columns "name" and "owner_name".  Therefore
+                # column owner.name cannot use the label "owner_name", it has
+                # to be "owner_name_1".
+                if label in t.c:
+                    _label = label
+                    counter = 1
+                    while _label in t.c:
+                        _label = label + "_" + str(counter)
+                        counter += 1
+                    label = _label
 
             return _as_truncated(label)
 
@@ -4231,10 +4274,13 @@ class quoted_name(util.MemoizedSlots, util.text_type):
             return util.text_type(self).upper()
 
     def __repr__(self):
-        backslashed = self.encode("ascii", "backslashreplace")
-        if not util.py2k:
-            backslashed = backslashed.decode("ascii")
-        return "'%s'" % backslashed
+        if util.py2k:
+            backslashed = self.encode("ascii", "backslashreplace")
+            if not util.py2k:
+                backslashed = backslashed.decode("ascii")
+            return "'%s'" % backslashed
+        else:
+            return str.__repr__(self)
 
 
 class _truncated_label(quoted_name):
