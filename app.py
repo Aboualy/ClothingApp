@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf8
+import os
 from flask_login import login_user, current_user, logout_user, login_required
 from flask import render_template, url_for, flash, redirect, request, abort
 from sqlalchemy import or_
@@ -31,6 +32,9 @@ def home(garments=None, *args):
 def about():
     return render_template('about.html', title='About')
 
+@app.route("/privacypolicy")
+def privacypolicy():
+    return render_template('privacypolicy.html', title='privacypolicy')
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -238,4 +242,6 @@ def sort():
 
 
 if __name__ == '__main__':
-    app.run()
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+    

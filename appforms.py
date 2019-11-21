@@ -44,7 +44,7 @@ class ClothesForm(FlaskForm):
     #def __init__(self):
     SIZE_CHOICES = [('S', 'S'), ('M', 'M'), ('L', 'L'), ('XL', 'XL'), ('XXL', 'XXL')]
     GENDER_CHOICES = [('MEN', 'MEN'), ('WOMEN', 'WOMEN'), ('KIDS', 'KIDS')]
-    title = StringField('Title', validators=[DataRequired(), Length(min=4, max=30)])
+    title = StringField('Title', validators=[DataRequired(), Length(min=4, max=15)])
     gender = SelectField('Gender', validators=[DataRequired()], choices=GENDER_CHOICES)
     size = SelectField('Size', validators=[DataRequired()], choices=SIZE_CHOICES)
     price = FloatField('Price')

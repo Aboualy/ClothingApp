@@ -41,8 +41,8 @@ class Garment(db.Model):
     Saving clothes posted by users with login credentials into our database
     """
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    gender = db.Column(db.String(100), nullable=False)
+    title = db.Column(db.String(10), nullable=False)
+    gender = db.Column(db.String(5), nullable=False)
     size = db.Column(db.String(5), nullable=False)
     price = db.Column(db.INTEGER, nullable=False)
     des = db.Column(db.Text, nullable=False)

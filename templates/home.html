@@ -3,7 +3,7 @@
 {% block content %}
 
      <nav class="navbar navbar-light bg-light">
-         <form class="form-inline my-2 my-lg-0" method="POST" action="/search" >
+         <form class="form-inline my-2 my-lg-0" method="POST" action="/search">
             {{ form.hidden_tag() }}
             <fieldset class="form-group">
                 <div class="form-group">
@@ -74,7 +74,7 @@
            <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
               <div class="carousel-inner">
                   <div class="carousel-item active">
-                  <img src="data:image/png;base64, {{ garment.pic }}" class="d-block w-100" alt="...">
+                  <img src="data:image/png;base64, {{ garment.pic }}" class="d-block w-100" alt="..." style="max-height: 200px">
                   </div>
 
 
@@ -97,7 +97,7 @@
                     <p class="card-text">{{ garment.des }}
                     </p>
                     <p class="card-text">
-                        <br><br>
+
                         <small class="text-muted">Last updated {{ garment.date_posted.strftime('%Y-%m-%d') }}</small></p>
                   </div>
                 </div>

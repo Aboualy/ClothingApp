@@ -25,7 +25,7 @@
               <div class="carousel-inner">
                   <div class="carousel-item active">
 
-                  <img src="data:image/png;base64, {{ garment.pic }}" class="d-block w-100" alt="...">
+                  <img src="data:image/png;base64, {{ garment.pic }}" class="d-block w-100" alt="..." style="max-height: 200px">
                   </div>
 
               </div>
@@ -45,9 +45,7 @@
                   <div class="card-body">
                     <p class="card-text">{{ garment.des }}
                     </p>
-
-
-                    <p class="card-text"> <br><br>
+                    <p class="card-text">
                         <small class="text-muted">Last updated {{ garment.date_posted.strftime('%Y-%m-%d') }}</small>
                     </p>
 
