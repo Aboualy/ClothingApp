@@ -1,6 +1,7 @@
 # ClothingApp
-Python flask sqlalchemy sqlite bootstrap 4 HTML5 CSS3. Clothing qpp where you can buy and sell your clothes
 
+Deployed to heroku http://boutiquedefinlande.herokuapp.com/ give it a try!
+Python flask sqlalchemy sqlite bootstrap 4 HTML5 CSS3. Clothing qpp where you can buy and sell your clothes
 ![1](https://user-images.githubusercontent.com/32483438/67002883-7dc8cf00-f0e5-11e9-8008-8c17b41e6dca.png)
 ![2](https://user-images.githubusercontent.com/32483438/67002884-7dc8cf00-f0e5-11e9-88d9-18c3383ffa75.png)
 ![3](https://user-images.githubusercontent.com/32483438/67002885-7dc8cf00-f0e5-11e9-834b-a631138fe76f.png)
